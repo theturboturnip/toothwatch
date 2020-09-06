@@ -90,7 +90,7 @@ class Stopwatch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Flutter Timer')),
+      appBar: AppBar(title: Text("Toothwatch")),
       body: AppSuspendWatchdog(
         bloc: BlocProvider.of<StopwatchBloc>(context),
         child: Padding(
