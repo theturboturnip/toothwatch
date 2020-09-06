@@ -93,13 +93,13 @@ class Stopwatch extends StatelessWidget {
       appBar: AppBar(title: Text('Flutter Timer')),
       body: AppSuspendWatchdog(
         bloc: BlocProvider.of<StopwatchBloc>(context),
-        child: Stack(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 100.0, horizontal: 20.0),
+          child: Stack(
           // mainAxisAlignment: MainAxisAlignment.center,
           // crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 100.0, horizontal: 20.0),
-              child: Center(
+            Center(
                 child: BlocBuilder<StopwatchBloc, StopwatchState>(
                   builder: (context, state) {
                     List<double> timesToDisplay = [];
@@ -142,13 +142,13 @@ class Stopwatch extends StatelessWidget {
                   },
                 ),
               ),
-            ),
-            BlocBuilder<StopwatchBloc, StopwatchState>(
-              buildWhen: (previousState, state) => state.runtimeType != previousState.runtimeType,
-              builder: (context, state) => Actions(),
-            ),
-          ],
-        )
+              BlocBuilder<StopwatchBloc, StopwatchState>(
+                buildWhen: (previousState, state) => state.runtimeType != previousState.runtimeType,
+                builder: (context, state) => Actions(),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -170,19 +170,32 @@ class Actions extends StatelessWidget {
 
     if (state is StopwatchIdle) {
       return [
-        FloatingActionButton(
-          child: Icon(Icons.arrow_upward),
-          tooltip: "Remove teeth",
-          onPressed: () => bloc.add(StopwatchToggled()),
-        )
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: FloatingActionButton(
+            child: Icon(Icons.timer),
+            tooltip: "Remove teeth",
+            onPressed: () => bloc.add(StopwatchToggled()),
+          ),
+        ),
+        Align(
+          alignment: Alignment.bottomRight,
+          child: FloatingActionButton(
+            child: Icon(Icons.clear),
+            onPressed: () => bloc.add(StopwatchCleared()),
+          ),
+        ),
       ];
     } else if (state is StopwatchTicking) {
       return [
-        FloatingActionButton(
-          child: Icon(Icons.arrow_downward),
-          tooltip: "Put teeth back",
-          onPressed: () => bloc.add(StopwatchToggled()),
-        )
+        Align(
+            alignment: Alignment.bottomCenter,
+            child: FloatingActionButton(
+            child: Icon(Icons.timer_off),
+            tooltip: "Put teeth back",
+            onPressed: () => bloc.add(StopwatchToggled()),
+          ),
+        ),
       ];
     }
   }
