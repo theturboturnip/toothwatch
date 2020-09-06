@@ -13,10 +13,14 @@ class StopwatchIdle extends StopwatchState {
   const StopwatchIdle(TimingData timingData) : super(timingData);
 }
 
+class StopwatchSuspended extends StopwatchState {
+  const StopwatchSuspended(TimingData timingData) : super(timingData);
+}
+
 class StopwatchTicking extends StopwatchState {
   final double secondsElapsed;
 
-  const StopwatchTicking(TimingData timingData, this.secondsElapsed) : super(timingData);
+  const StopwatchTicking(TimingData timingData, {@required this.secondsElapsed}) : super(timingData);
 
   @override
   List<Object> get props => [timingData, secondsElapsed];

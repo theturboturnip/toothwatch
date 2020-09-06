@@ -12,3 +12,11 @@ class StopwatchToggled extends StopwatchEvent {}
 class StopwatchCleared extends StopwatchEvent {}
 
 class StopwatchTicked extends StopwatchEvent {}
+
+class StopwatchSuspend extends StopwatchEvent {}
+
+class StopwatchUnsuspend extends StopwatchEvent {}
+
+class StopwatchSerialize extends StopwatchEvent {}
+
+class StopwatchDeserialize extends StopwatchEvent {}

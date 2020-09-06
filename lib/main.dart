@@ -91,61 +91,64 @@ class Stopwatch extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Flutter Timer')),
-      body: Stack(
-        // mainAxisAlignment: MainAxisAlignment.center,
-        // crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 100.0, horizontal: 20.0),
-            child: Center(
-              child: BlocBuilder<StopwatchBloc, StopwatchState>(
-                builder: (context, state) {
-                  List<double> timesToDisplay = [];
-                  if (state is StopwatchTicking)
-                    timesToDisplay.add(state.secondsElapsed);
-                  timesToDisplay.addAll(state.timingData.times.reversed);
+      body: AppSuspendWatchdog(
+        bloc: BlocProvider.of<StopwatchBloc>(context),
+        child: Stack(
+          // mainAxisAlignment: MainAxisAlignment.center,
+          // crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 100.0, horizontal: 20.0),
+              child: Center(
+                child: BlocBuilder<StopwatchBloc, StopwatchState>(
+                  builder: (context, state) {
+                    List<double> timesToDisplay = [];
+                    if (state is StopwatchTicking)
+                      timesToDisplay.add(state.secondsElapsed);
+                    timesToDisplay.addAll(state.timingData.times.reversed);
 
-                  var previousTimes = ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: 200
-                      ),
-                      child: ListView(
-                        padding: const EdgeInsets.all(8),
-                        children: timesToDisplay.map(
-                            (time) {
-                              final String timeStr = _printDurationFull(_durationOfSeconds(seconds: time));
-                              return Container(
-                                height: 20,
-                                color: Colors.transparent,
-                                child: Center(child: Text(timeStr)),
-                              );
-                            }
-                        ).toList(),
-                      )
-                  );
+                    var previousTimes = ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: 200
+                        ),
+                        child: ListView(
+                          padding: const EdgeInsets.all(8),
+                          children: timesToDisplay.map(
+                              (time) {
+                                final String timeStr = _printDurationFull(_durationOfSeconds(seconds: time));
+                                return Container(
+                                  height: 20,
+                                  color: Colors.transparent,
+                                  child: Center(child: Text(timeStr)),
+                                );
+                              }
+                          ).toList(),
+                        )
+                    );
 
-                  double elapsedTime = timesToDisplay.fold(0.0, (curr, next) => curr + next);
+                    double elapsedTime = timesToDisplay.fold(0.0, (curr, next) => curr + next);
 
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      FittedBox(
-                        fit: BoxFit.fitWidth,
-                        child: Text(_printDurationPretty(_durationOfSeconds(seconds: elapsedTime)), style: timeRemainingText),
-                      ),
-                      previousTimes,
-                    ],
-                  );
-                },
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        FittedBox(
+                          fit: BoxFit.fitWidth,
+                          child: Text(_printDurationPretty(_durationOfSeconds(seconds: elapsedTime)), style: timeRemainingText),
+                        ),
+                        previousTimes,
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          BlocBuilder<StopwatchBloc, StopwatchState>(
-            buildWhen: (previousState, state) => state.runtimeType != previousState.runtimeType,
-            builder: (context, state) => Actions(),
-          ),
-        ],
+            BlocBuilder<StopwatchBloc, StopwatchState>(
+              buildWhen: (previousState, state) => state.runtimeType != previousState.runtimeType,
+              builder: (context, state) => Actions(),
+            ),
+          ],
+        )
       ),
     );
   }
@@ -182,5 +185,62 @@ class Actions extends StatelessWidget {
         )
       ];
     }
+  }
+}
+
+
+class AppSuspendWatchdog extends StatefulWidget {
+  const AppSuspendWatchdog({
+    Key key,
+    @required this.bloc,
+    this.child,
+  }) : super(key: key);
+
+  final StopwatchBloc bloc;
+  final Widget child;
+
+  @override
+  State<AppSuspendWatchdog> createState() => _AppSuspendWatchdogState();
+}
+
+class _AppSuspendWatchdogState extends State<AppSuspendWatchdog> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch(state) {
+      case AppLifecycleState.resumed:
+        widget.bloc.add(StopwatchUnsuspend());
+        break;
+      case AppLifecycleState.paused:
+        widget.bloc.add(StopwatchSuspend());
+        break;
+
+      case AppLifecycleState.inactive:
+      // TODO: Handle this case.
+        break;
+      case AppLifecycleState.detached:
+        // TODO: Handle this case.
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }
