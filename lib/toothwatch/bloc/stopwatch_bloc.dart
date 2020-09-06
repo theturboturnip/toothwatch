@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:optional/optional.dart';
 import 'package:toothwatch/toothwatch/bloc/ticker.dart';
 import 'package:toothwatch/toothwatch/models/timing_data.dart';
+import 'package:toothwatch/toothwatch/service_connection.dart';
 
 part 'stopwatch_event.dart';
 part 'stopwatch_state.dart';
@@ -13,10 +14,12 @@ part 'stopwatch_state.dart';
 class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
   final Ticker _ticker;
   StreamSubscription<int> _tickerSubscription;
+  ServiceConnection _serviceConnection;
 
   StopwatchBloc({@required Ticker ticker, @required TimingData timingData})
       : assert(ticker != null),
         _ticker = ticker,
+        _serviceConnection = ServiceConnection(),
         assert(timingData != null),
         super(StopwatchIdle(timingData));
 
@@ -40,7 +43,7 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         print("Unsuspending!");
 
         TimingData loadedTimingData = state.timingData;//TimingData.empty();
-        Optional<double> stopwatchSecondsSinceSuspend = Optional.empty();
+        Optional<double> stopwatchSecondsSinceSuspend = await _serviceConnection.retrieveTimerSecondsAndClose();
         // TODO - load timer data from background
         if (stopwatchSecondsSinceSuspend.isPresent) {
           // NOTE - returning a new state with the correct suspend value is correct.
@@ -81,6 +84,9 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
 
         // TODO - kick off some sort of background timer if necessary
         _stopTicker();
+        if (state is StopwatchTicking)
+          await _serviceConnection.startTimerService(secondsElapsed: (state as StopwatchTicking).secondsElapsed);
+
 
         return StopwatchSuspended(state.timingData);
       } else if (event is StopwatchSerialize) {
