@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:optional/optional.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toothwatch/toothwatch/bloc/ticker.dart';
 import 'package:toothwatch/toothwatch/interop/foregound_channel.dart';
 import 'package:toothwatch/toothwatch/models/timing_data.dart';
@@ -22,7 +24,9 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         _ticker = ticker,
         _javaTimerControl = ForegroundChannel(),
         assert(timingData != null),
-        super(StopwatchIdle(timingData));
+        super(StopwatchInitial(timingData)) {
+    add(StopwatchLoad());
+  }
 
   @override
   Future<void> close() {
@@ -34,30 +38,59 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
   Stream<StopwatchState> mapEventToState(
     StopwatchEvent event,
   ) async* {
-    yield await _transitionByEvent(event);
+    final newState = await _transitionByEvent(event);
+    if (state.timingData != newState.timingData)
+      await saveTimingData(newState);
+    yield newState;
+  }
+
+  Future<StopwatchState> loadNewStateFromSurroundings() async {
+    TimingData loadedTimingData = await loadTimingData();
+    Optional<NotificationInitState> stopwatchNotificationInitState = await _javaTimerControl.getTimerStateAndClose();
+
+    if (stopwatchNotificationInitState.isPresent) {
+      // NOTE - returning a new state with the correct suspend value is correct.
+      //  returning StopwatchIdle and enqueueing a StopwatchStart would *not* be.
+      //  this is because we don't know what's queued after us - if we unsuspend and have a suspend directly afterwards, we'd suspend incorrect state.
+      _startTicker();
+
+      return StopwatchTicking(loadedTimingData,
+          secondsElapsed: stopwatchNotificationInitState.value.secondsSinceInit());
+    }
+    return StopwatchIdle(loadedTimingData);
+  }
+
+  static final String TIMING_DATA_PREF = "TimingData";
+
+  void saveTimingData(StopwatchState toSave) async {
+    print("Saving timing data ${toSave.timingData}");
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString(TIMING_DATA_PREF, jsonEncode(toSave.timingData.toJson()));
+  }
+
+  Future<TimingData> loadTimingData() async {
+    print("Loading timing data");
+    final prefs = await SharedPreferences.getInstance();
+    final timingDataStr = prefs.getString(TIMING_DATA_PREF);
+    if (timingDataStr == null) {
+      print("Got null timing data");
+      return TimingData.empty();
+    }
+    print("Got string $timingDataStr");
+    return TimingData.fromJson(jsonDecode(timingDataStr));
   }
 
   Future<StopwatchState> _transitionByEvent(StopwatchEvent event) async {
-    if (state is StopwatchSuspended) {
+    if (state is StopwatchInitial) {
+      if (event is StopwatchLoad) {
+        return loadNewStateFromSurroundings();
+      }
+    } else if (state is StopwatchSuspended) {
       // Only accept Unsuspend or Serialize events
       if (event is StopwatchUnsuspend) {
         print("Unsuspending!");
 
-        TimingData loadedTimingData = state.timingData;//TimingData.empty();
-        Optional<NotificationInitState> stopwatchNotificationInitState = await _javaTimerControl.getTimerStateAndClose();
-        // TODO - load timer data from background
-        if (stopwatchNotificationInitState.isPresent) {
-          // NOTE - returning a new state with the correct suspend value is correct.
-          //  returning StopwatchIdle and enqueueing a StopwatchStart would *not* be.
-          //  this is because we don't know what's queued after us - if we unsuspend and have a suspend directly afterwards, we'd suspend incorrect state.
-          _startTicker();
-
-          return StopwatchTicking(loadedTimingData,
-              secondsElapsed: stopwatchNotificationInitState.value.secondsSinceInit());
-        }
-        return StopwatchIdle(loadedTimingData);
-      } else if (event is StopwatchSerialize) {
-        // TODO - call serialize function
+        return loadNewStateFromSurroundings();
       }
     } else {
       if (event is StopwatchToggled) {
@@ -94,10 +127,6 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
           );
 
         return StopwatchSuspended(state.timingData);
-      } else if (event is StopwatchSerialize) {
-        // TODO - call serialize function
-      } else if (event is StopwatchDeserialize) {
-        // TODO - call deserialize function
       }
     }
 

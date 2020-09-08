@@ -9,6 +9,10 @@ abstract class StopwatchState extends Equatable {
   List<Object> get props => [timingData];
 }
 
+class StopwatchInitial extends StopwatchState {
+  const StopwatchInitial(TimingData timingData) : super(timingData);
+}
+
 class StopwatchIdle extends StopwatchState {
   const StopwatchIdle(TimingData timingData) : super(timingData);
 }
