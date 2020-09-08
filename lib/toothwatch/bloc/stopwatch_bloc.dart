@@ -5,8 +5,9 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:optional/optional.dart';
 import 'package:toothwatch/toothwatch/bloc/ticker.dart';
-import 'package:toothwatch/toothwatch/interop/service_connection.dart';
+import 'package:toothwatch/toothwatch/interop/foregound_channel.dart';
 import 'package:toothwatch/toothwatch/models/timing_data.dart';
+import 'package:toothwatch/toothwatch/notification/notification_init_state.dart';
 
 part 'stopwatch_event.dart';
 part 'stopwatch_state.dart';
@@ -14,12 +15,12 @@ part 'stopwatch_state.dart';
 class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
   final Ticker _ticker;
   StreamSubscription<int> _tickerSubscription;
-  ServiceConnection _serviceConnection;
+  ForegroundChannel _javaTimerControl;
 
   StopwatchBloc({@required Ticker ticker, @required TimingData timingData})
       : assert(ticker != null),
         _ticker = ticker,
-        _serviceConnection = ServiceConnection(),
+        _javaTimerControl = ForegroundChannel(),
         assert(timingData != null),
         super(StopwatchIdle(timingData));
 
@@ -43,16 +44,16 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         print("Unsuspending!");
 
         TimingData loadedTimingData = state.timingData;//TimingData.empty();
-        Optional<double> stopwatchSecondsSinceSuspend = await _serviceConnection.retrieveTimerSecondsAndClose();
+        Optional<NotificationInitState> stopwatchNotificationInitState = await _javaTimerControl.getTimerStateAndClose();
         // TODO - load timer data from background
-        if (stopwatchSecondsSinceSuspend.isPresent) {
+        if (stopwatchNotificationInitState.isPresent) {
           // NOTE - returning a new state with the correct suspend value is correct.
           //  returning StopwatchIdle and enqueueing a StopwatchStart would *not* be.
           //  this is because we don't know what's queued after us - if we unsuspend and have a suspend directly afterwards, we'd suspend incorrect state.
           _startTicker();
 
           return StopwatchTicking(loadedTimingData,
-              secondsElapsed: stopwatchSecondsSinceSuspend.value);
+              secondsElapsed: stopwatchNotificationInitState.value.secondsSinceInit());
         }
         return StopwatchIdle(loadedTimingData);
       } else if (event is StopwatchSerialize) {
@@ -82,11 +83,15 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
       } else if (event is StopwatchSuspend) {
         print("Suspending!");
 
-        // TODO - kick off some sort of background timer if necessary
+        // Kick off the background timer if necessary
         _stopTicker();
         if (state is StopwatchTicking)
-          await _serviceConnection.startTimerService(secondsElapsed: (state as StopwatchTicking).secondsElapsed);
-
+          await _javaTimerControl.startTimerService(
+              initialState: NotificationInitState(
+                secondsElapsedAtStart: (state as StopwatchTicking).secondsElapsed,
+                millisecondsEpochAtStart: DateTime.now().millisecondsSinceEpoch
+              )
+          );
 
         return StopwatchSuspended(state.timingData);
       } else if (event is StopwatchSerialize) {

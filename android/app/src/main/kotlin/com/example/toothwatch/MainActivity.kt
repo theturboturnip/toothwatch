@@ -17,11 +17,13 @@ class MainActivity: FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FLUTTER_CHANNEL).setMethodCallHandler {
             call, result ->
-                if (call.method == "startTimerService") {
-                    startTimerService(call.argument("secondsElapsed") ?: 0.0);
+                if (call.method == "setBackgroundChannelHandle") {
+                    TimerBackgroundChannelHelper.setHandle(this.applicationContext, call.arguments as Long)
+                } else if (call.method == "startTimerService") {
+                    startTimerService(call.argument<String>("stateJson") ?: "");
                     result.success(null);
-                } else if (call.method == "retrieveTimerSecondsAndClose") {
-                    val timerSeconds = retrieveTimerSecondsAndClose()
+                } else if (call.method == "getTimerStateAndClose") {
+                    val timerSeconds = getTimerStateAndClose()
                     result.success(timerSeconds)
                 } else {
                     result.notImplemented()
@@ -29,17 +31,17 @@ class MainActivity: FlutterActivity() {
         }
     }
 
-    private fun startTimerService(secondsElapsed: Double) {
+    private fun startTimerService(stateJson: String) {
         val service = Intent(this, TimerService::class.java)
         // TODO - add unix epoch extra
-        service.putExtra(TimerService.START_SECONDS_EXTRA, (secondsElapsed * 1L))
+        service.putExtra(TimerService.STATE_JSON_ID, stateJson)
         startService(service)
         bindService(service, connection, Context.BIND_IMPORTANT or Context.BIND_AUTO_CREATE)
     }
 
-    private fun retrieveTimerSecondsAndClose() : Double {
+    private fun getTimerStateAndClose() : String? {
         val timerService = connection.timerService
-        val timerSeconds = timerService?.getElapsedSeconds() ?: -1.0;
+        val timerSeconds = timerService?.getNotificationStaticState();
         if (timerService != null) {
             val service = Intent(this, TimerService::class.java)
             connection.unbindService(this)
