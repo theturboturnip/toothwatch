@@ -19,22 +19,35 @@ String _printUnitPretty(int value, String unit) {
 String durationToStringPretty(Duration duration) {
   assert(!duration.isNegative);
 
-  final String hours = _printUnitPretty(duration.inHours, "hour");
-  final String minutes = _printUnitPretty(duration.inMinutes % 60, "minute");
-  final String seconds = _printUnitPretty(duration.inSeconds % 60, "second");
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes % 60;
+  final seconds = duration.inSeconds % 60;
 
-  if (duration.inHours > 0) {
-    if (duration.inMinutes > 0) {
-      return "${hours} and ${minutes}";
+  final String hourStr = _printUnitPretty(hours, "hour");
+  final String minuteStr = _printUnitPretty(minutes, "min");
+  final String secondStr = _printUnitPretty(seconds, "second");
+
+  if (hours > 0) {
+    if (minutes > 0) {
+      return "$hourStr and $minuteStr";
     } else {
-      return hours;
+      return hourStr;
     }
   } else {
-    if (duration.inMinutes > 0) {
-      return minutes;
+    if (minutes > 0) {
+      return minuteStr;
     } else {
-      return seconds;
+      return secondStr;
     }
+  }
+}
+
+String remainingDurationToStringPretty(Duration duration) {
+  if (duration.isNegative){
+    final positiveDuration = Duration(milliseconds: -duration.inMilliseconds);
+    return "OVER BY ${durationToStringPretty(positiveDuration)}";
+  } else {
+    return "${durationToStringPretty(duration)} remaining";
   }
 }
 

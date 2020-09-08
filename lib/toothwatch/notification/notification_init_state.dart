@@ -8,16 +8,21 @@ part 'notification_init_state.g.dart';
 
 @JsonSerializable()
 class NotificationInitState {
-  final double secondsElapsedAtStart;
-  final int millisecondsEpochAtStart;
+  final double timerSecondsElapsedAtStart;
+  final int timerMillisecondsEpochAtStart;
+  final double previousSumTimes;
+  final double expectedTotalTimeSeconds;
 
-  const NotificationInitState({@required this.secondsElapsedAtStart, @required this.millisecondsEpochAtStart});
+  const NotificationInitState({@required this.timerSecondsElapsedAtStart, @required this.timerMillisecondsEpochAtStart, @required this.previousSumTimes, @required this.expectedTotalTimeSeconds});
 
   factory NotificationInitState.fromJson(Map<String, dynamic> json) => _$NotificationInitStateFromJson(json);
   Map<String, dynamic> toJson() => _$NotificationInitStateToJson(this);
 
   double secondsSinceInit() {
-    return secondsElapsedAtStart + (DateTime.now().millisecondsSinceEpoch - millisecondsEpochAtStart) / 1000.0;
+    return timerSecondsElapsedAtStart + (DateTime.now().millisecondsSinceEpoch - timerMillisecondsEpochAtStart) / 1000.0;
+  }
+  double totalSecondsRemaining() {
+    return expectedTotalTimeSeconds - secondsSinceInit();
   }
 }
 
@@ -40,9 +45,13 @@ double computeNotificationTimerSeconds(String notificationInitStateJson) {
 }
 
 NotificationText computeNewNotificationText(String notificationInitStateJson) {
-  double timerSeconds = computeNotificationTimerSeconds(notificationInitStateJson);
+  Map initStateMap = jsonDecode(notificationInitStateJson);
+  final initState = NotificationInitState.fromJson(initStateMap);
+  final timeRemaining = durationFromPartialSeconds(seconds: initState.totalSecondsRemaining());
+  final timeSinceInit = durationFromPartialSeconds(seconds: initState.secondsSinceInit());
 
   return NotificationText(
-    title: durationToStringPretty(durationFromPartialSeconds(seconds: timerSeconds))
+    title: remainingDurationToStringPretty(timeRemaining),
+    subtitle: "Current session is ${durationToStringPretty(timeSinceInit)}"
   );
 }

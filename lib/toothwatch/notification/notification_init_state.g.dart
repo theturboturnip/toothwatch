@@ -9,16 +9,22 @@ part of 'notification_init_state.dart';
 NotificationInitState _$NotificationInitStateFromJson(
     Map<String, dynamic> json) {
   return NotificationInitState(
-    secondsElapsedAtStart: (json['secondsElapsedAtStart'] as num)?.toDouble(),
-    millisecondsEpochAtStart: json['millisecondsEpochAtStart'] as int,
+    timerSecondsElapsedAtStart:
+        (json['timerSecondsElapsedAtStart'] as num)?.toDouble(),
+    timerMillisecondsEpochAtStart: json['timerMillisecondsEpochAtStart'] as int,
+    previousSumTimes: (json['previousSumTimes'] as num)?.toDouble(),
+    expectedTotalTimeSeconds:
+        (json['expectedTotalTimeSeconds'] as num)?.toDouble(),
   );
 }
 
 Map<String, dynamic> _$NotificationInitStateToJson(
         NotificationInitState instance) =>
     <String, dynamic>{
-      'secondsElapsedAtStart': instance.secondsElapsedAtStart,
-      'millisecondsEpochAtStart': instance.millisecondsEpochAtStart,
+      'timerSecondsElapsedAtStart': instance.timerSecondsElapsedAtStart,
+      'timerMillisecondsEpochAtStart': instance.timerMillisecondsEpochAtStart,
+      'previousSumTimes': instance.previousSumTimes,
+      'expectedTotalTimeSeconds': instance.expectedTotalTimeSeconds,
     };
 
 NotificationText _$NotificationTextFromJson(Map<String, dynamic> json) {

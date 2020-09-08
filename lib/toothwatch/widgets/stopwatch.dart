@@ -52,6 +52,7 @@ class StopwatchPage extends StatelessWidget {
                     );
 
                     double elapsedTime = timesToDisplay.fold(0.0, (curr, next) => curr + next);
+                    double remainingTime = state.timingData.expectedTotalTimeSeconds - elapsedTime;
 
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -59,7 +60,7 @@ class StopwatchPage extends StatelessWidget {
                       children: <Widget>[
                         FittedBox(
                           fit: BoxFit.fitWidth,
-                          child: Text(durationToStringPretty(durationFromPartialSeconds(seconds: elapsedTime)), style: timeRemainingText),
+                          child: Text(remainingDurationToStringPretty(durationFromPartialSeconds(seconds: remainingTime)), style: timeRemainingText),
                         ),
                         previousTimes,
                       ],

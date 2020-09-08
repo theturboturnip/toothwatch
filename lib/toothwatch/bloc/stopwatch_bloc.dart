@@ -121,8 +121,10 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         if (state is StopwatchTicking)
           await _javaTimerControl.startTimerService(
               initialState: NotificationInitState(
-                secondsElapsedAtStart: (state as StopwatchTicking).secondsElapsed,
-                millisecondsEpochAtStart: DateTime.now().millisecondsSinceEpoch
+                timerSecondsElapsedAtStart: (state as StopwatchTicking).secondsElapsed,
+                timerMillisecondsEpochAtStart: DateTime.now().millisecondsSinceEpoch,
+                previousSumTimes: state.timingData.sumTimes,
+                expectedTotalTimeSeconds: state.timingData.expectedTotalTimeSeconds
               )
           );
 
