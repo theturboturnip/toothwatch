@@ -42,25 +42,39 @@ class MainActivity: FlutterActivity() {
         val timerSeconds = timerService?.getElapsedSeconds() ?: -1.0;
         if (timerService != null) {
             val service = Intent(this, TimerService::class.java)
-            unbindService(connection)
+            connection.unbindService(this)
             stopService(service)
         }
         return timerSeconds
     }
 
     private val connection = object : ServiceConnection {
+        val TAG = "TimerServiceConnection";
+
         var timerService: TimerService? = null;
+
+        fun unbindService(context: Context) {
+            timerService = null;
+            context.unbindService(this)
+            Log.i(TAG, "Service unbound, now $timerService")
+        }
 
         override fun onServiceConnected(className: ComponentName?,
                                         service: IBinder) {
             val binder = service as TimerService.TimerBinder
             timerService = binder.getService()
-            //Log.i(TAG, "Service connected")
+            Log.i(TAG, "Service connected, now $timerService")
         }
 
+        override fun onBindingDied(name: ComponentName?) {
+            timerService = null
+            Log.e(TAG, "Binding died, now $timerService")
+        }
+
+        // This function is only for when the service is killed or crashes
         override fun onServiceDisconnected(arg0: ComponentName?) {
-            timerService = null;
-            //Log.i(TAG, "Service disconnected")
+            timerService = null
+            Log.i(TAG, "Service crashed, now $timerService")
         }
     }
 }

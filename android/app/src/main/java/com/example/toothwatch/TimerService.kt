@@ -52,7 +52,6 @@ class TimerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show()
         if (intent != null) {
             timerStartMillis = intent.getLongExtra(MS_SINCE_EPOCH_EXTRA, System.currentTimeMillis());
             timerStartMillis -= (intent.getDoubleExtra(START_SECONDS_EXTRA, 0.0) * 1000).toLong();
@@ -68,7 +67,6 @@ class TimerService : Service() {
     }
 
     override fun onDestroy() {
-        Toast.makeText(this, "service destroyed", Toast.LENGTH_SHORT).show()
         handler.removeCallbacksAndMessages(null);
         val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         mNotificationManager.cancel(NOTIFICATION_ID);
