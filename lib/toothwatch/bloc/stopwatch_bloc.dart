@@ -5,8 +5,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:optional/optional.dart';
 import 'package:toothwatch/toothwatch/bloc/ticker.dart';
+import 'package:toothwatch/toothwatch/interop/service_connection.dart';
 import 'package:toothwatch/toothwatch/models/timing_data.dart';
-import 'package:toothwatch/toothwatch/service_connection.dart';
 
 part 'stopwatch_event.dart';
 part 'stopwatch_state.dart';
