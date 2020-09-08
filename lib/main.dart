@@ -65,8 +65,8 @@ class Stopwatch extends StatelessWidget {
     assert(!duration.isNegative);
 
     final String hours = _printUnitPretty(duration.inHours, "hour");
-    final String minutes = _printUnitPretty(duration.inMinutes, "minute");
-    final String seconds = _printUnitPretty(duration.inSeconds, "second");
+    final String minutes = _printUnitPretty(duration.inMinutes % 60, "minute");
+    final String seconds = _printUnitPretty(duration.inSeconds % 60, "second");
 
     if (duration.inHours > 0) {
       if (duration.inMinutes > 0) {
@@ -96,10 +96,10 @@ class Stopwatch extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 100.0, horizontal: 20.0),
           child: Stack(
-          // mainAxisAlignment: MainAxisAlignment.center,
-          // crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Center(
+            // mainAxisAlignment: MainAxisAlignment.center,
+            // crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Center(
                 child: BlocBuilder<StopwatchBloc, StopwatchState>(
                   builder: (context, state) {
                     List<double> timesToDisplay = [];
@@ -168,7 +168,18 @@ class Actions extends StatelessWidget {
   List<Widget> _mapStateToActionButtons(StopwatchBloc bloc) {
     final StopwatchState state = bloc.state;
 
-    if (state is StopwatchIdle) {
+    if (state is StopwatchTicking) {
+      return [
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: FloatingActionButton(
+            child: Icon(Icons.timer_off),
+            tooltip: "Put teeth back",
+            onPressed: () => bloc.add(StopwatchToggled()),
+          ),
+        ),
+      ];
+    } else {
       return [
         Align(
           alignment: Alignment.bottomCenter,
@@ -183,17 +194,6 @@ class Actions extends StatelessWidget {
           child: FloatingActionButton(
             child: Icon(Icons.clear),
             onPressed: () => bloc.add(StopwatchCleared()),
-          ),
-        ),
-      ];
-    } else if (state is StopwatchTicking) {
-      return [
-        Align(
-            alignment: Alignment.bottomCenter,
-            child: FloatingActionButton(
-            child: Icon(Icons.timer_off),
-            tooltip: "Put teeth back",
-            onPressed: () => bloc.add(StopwatchToggled()),
           ),
         ),
       ];
