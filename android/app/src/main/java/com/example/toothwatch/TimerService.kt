@@ -43,7 +43,7 @@ class TimerService : Service() {
         }
     }
 
-    public fun getElapsedSeconds() : Double {
+    fun getElapsedSeconds() : Double {
         return (System.currentTimeMillis() - timerStartMillis) / 1000.0;
     }
 
@@ -88,6 +88,8 @@ class TimerService : Service() {
                 .setContentText(formattedTime)
                 .setSmallIcon(R.drawable.ic_baseline_child_care_24)
                 .setContentIntent(pendingIntent)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
                 .build()
     }
 
