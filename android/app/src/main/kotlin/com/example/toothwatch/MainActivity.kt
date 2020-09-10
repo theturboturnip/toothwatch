@@ -42,11 +42,12 @@ class MainActivity: FlutterActivity() {
     private fun getTimerStateAndClose() : String? {
         val timerService = connection.timerService
         val timerSeconds = timerService?.getNotificationStaticState();
-        if (timerService != null) {
-            val service = Intent(this, TimerService::class.java)
+
+        val service = Intent(this, TimerService::class.java)
+        if (connection.timerService != null)
             connection.unbindService(this)
-            stopService(service)
-        }
+        stopService(service)
+
         return timerSeconds
     }
 
