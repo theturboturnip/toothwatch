@@ -22,7 +22,7 @@ class NotificationInitState {
     return timerSecondsElapsedAtStart + (DateTime.now().millisecondsSinceEpoch - timerMillisecondsEpochAtStart) / 1000.0;
   }
   double totalSecondsRemaining() {
-    return expectedTotalTimeSeconds - secondsSinceInit();
+    return expectedTotalTimeSeconds - secondsSinceInit() - previousSumTimes;
   }
 }
 
@@ -52,6 +52,6 @@ NotificationText computeNewNotificationText(String notificationInitStateJson) {
 
   return NotificationText(
     title: remainingDurationToStringPretty(timeRemaining),
-    subtitle: "Current session is ${durationToStringPretty(timeSinceInit)}"
+    subtitle: "Current session: ${durationToStringPretty(timeSinceInit)}"
   );
 }

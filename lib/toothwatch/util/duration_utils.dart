@@ -23,13 +23,13 @@ String durationToStringPretty(Duration duration) {
   final minutes = duration.inMinutes % 60;
   final seconds = duration.inSeconds % 60;
 
-  final String hourStr = _printUnitPretty(hours, "hour");
+  final String hourStr = _printUnitPretty(hours, "hr");
   final String minuteStr = _printUnitPretty(minutes, "min");
   final String secondStr = _printUnitPretty(seconds, "second");
 
   if (hours > 0) {
     if (minutes > 0) {
-      return "$hourStr and $minuteStr";
+      return "$hourStr $minuteStr";
     } else {
       return hourStr;
     }
