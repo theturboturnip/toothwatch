@@ -26,7 +26,10 @@ class TimerService : Service() {
     private var backgroundChannel: MethodChannel? = null;
 
     private val binder = TimerBinder()
-    private val handler = Handler()
+//    private var timer: Timer? = null
+    private var handler: Handler? = null
+    // TODO - this can still stay alive if handler.removeCallbacksAndMessages() happens during execution of this?
+    // Timer/TimerTask may be better ways of doing this
     private val notificationUpdateRunner = object : Runnable {
         override fun run() {
             _createNotification { notification ->
@@ -35,10 +38,9 @@ class TimerService : Service() {
 
                 // Post slightly more frequently than every second because this function takes time
                 // we don't want to skip over a second and look unresponsive
-                handler.postDelayed(this, 500)
+                // If the TimerService.handler is set to null, then it doesn't re-post
+                (this@TimerService).handler?.postDelayed(this, 500)
             }
-
-
         }
     }
 
@@ -76,7 +78,17 @@ class TimerService : Service() {
         _createNotification { notification ->
             startForeground(NOTIFICATION_ID, notification)
 
-            handler.postDelayed(notificationUpdateRunner, 1000);
+//            timer = Timer()
+//            timer?.schedule( object: TimerTask() {
+//                override fun run() {
+//                    _createNotification { notification ->
+//                        val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+//                        mNotificationManager.notify(NOTIFICATION_ID, notification)
+//                    }
+//                }
+//            }, 0, 500)
+            handler = Handler()
+            handler?.postDelayed(notificationUpdateRunner, 1000);
         }
 
 
@@ -84,7 +96,12 @@ class TimerService : Service() {
     }
 
     override fun onDestroy() {
-        handler.removeCallbacksAndMessages(null);
+        handler?.removeCallbacksAndMessages(null)
+        handler?.removeCallbacks(notificationUpdateRunner)
+        handler = null
+//        timer?.cancel()
+//        timer = null
+        // TODO try handler.removeCallbacks(notificationUpdateRunner);
         val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         mNotificationManager.cancel(NOTIFICATION_ID);
     }
