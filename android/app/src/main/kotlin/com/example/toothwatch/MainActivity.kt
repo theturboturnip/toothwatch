@@ -11,6 +11,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: FlutterActivity() {
+    val TAG = "MainActivity"
     private val FLUTTER_CHANNEL = "com.example.toothwatch/timer";
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -33,10 +34,10 @@ class MainActivity: FlutterActivity() {
 
     private fun startTimerService(stateJson: String) {
         val service = Intent(this, TimerService::class.java)
-        // TODO - add unix epoch extra
         service.putExtra(TimerService.STATE_JSON_ID, stateJson)
+
         startService(service)
-        bindService(service, connection, Context.BIND_IMPORTANT or Context.BIND_AUTO_CREATE)
+        bindService(service, connection, 0)
     }
 
     private fun getTimerStateAndClose() : String? {
@@ -44,8 +45,11 @@ class MainActivity: FlutterActivity() {
         val timerSeconds = timerService?.getNotificationStaticState();
 
         val service = Intent(this, TimerService::class.java)
-        if (connection.timerService != null)
+        if (connection.timerService != null) {
+            Log.i(TAG, "Unbinding service as was not null")
             connection.unbindService(this)
+        }
+        Log.i(TAG, "Stopping service")
         stopService(service)
 
         return timerSeconds
@@ -57,7 +61,7 @@ class MainActivity: FlutterActivity() {
         var timerService: TimerService? = null;
 
         fun unbindService(context: Context) {
-            timerService = null;
+            timerService = null
             context.unbindService(this)
             Log.i(TAG, "Service unbound, now $timerService")
         }
