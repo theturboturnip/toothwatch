@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:toothwatch/toothwatch/notification/persistent_notification.dart';
+import 'package:toothwatch/toothwatch/notification/persistent_notification_state.dart';
 
 void backgroundChannel() {
   const MethodChannel _background = MethodChannel(
@@ -20,6 +21,6 @@ void backgroundChannel() {
 }
 
 Map<String, dynamic> _getNotificationJson(String notificationInitStateJson) {
-  final notificationText = computeNewNotificationText(notificationInitStateJson);
-  return notificationText.toJson();
+  final evalData = evalPersistentNotification(PersistentNotificationState.fromJsonStr(notificationInitStateJson));
+  return evalData.toJson();
 }

@@ -118,7 +118,8 @@ class TimerService : Service() {
                 ResultCallback {
                     result ->
                     val res = result as Map<String, Any>
-                    val notification = createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res)
+                    this.notificationStaticStateJSON = res["newPersistentStateJSONStr"] as String
+                    val notification = createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res["persistentNotificationText"] as Map<String, Any>)
                             .setOngoing(true)
                             .setOnlyAlertOnce(true)
                             .build()

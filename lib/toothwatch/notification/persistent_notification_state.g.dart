@@ -23,3 +23,27 @@ Map<String, dynamic> _$PersistentNotificationStateToJson(
       'previousSumTimes': instance.previousSumTimes,
       'expectedTotalTimeSeconds': instance.expectedTotalTimeSeconds,
     };
+
+PersistentNotificationEvalData _$PersistentNotificationEvalDataFromJson(
+    Map<String, dynamic> json) {
+  return PersistentNotificationEvalData(
+    newPersistentStateJSONStr: json['newPersistentStateJSONStr'] as String,
+    persistentNotificationText: json['persistentNotificationText'] == null
+        ? null
+        : NotificationText.fromJson(
+            json['persistentNotificationText'] as Map<String, dynamic>),
+    alertNotificationText: json['alertNotificationText'] == null
+        ? null
+        : NotificationText.fromJson(
+            json['alertNotificationText'] as Map<String, dynamic>),
+  );
+}
+
+Map<String, dynamic> _$PersistentNotificationEvalDataToJson(
+        PersistentNotificationEvalData instance) =>
+    <String, dynamic>{
+      'newPersistentStateJSONStr': instance.newPersistentStateJSONStr,
+      'persistentNotificationText':
+          instance.persistentNotificationText?.toJson(),
+      'alertNotificationText': instance.alertNotificationText?.toJson(),
+    };
