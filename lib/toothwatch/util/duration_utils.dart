@@ -20,7 +20,7 @@ String durationToStringPretty(Duration duration) {
   assert(!duration.isNegative);
 
   //final hours = duration.inHours;
-  final minutes = duration.inMinutes % 60;
+  final minutes = duration.inMinutes;
   final seconds = duration.inSeconds % 60;
 
   //final String hourStr = _printUnitPretty(hours, "hr");
@@ -53,4 +53,8 @@ String remainingDurationToStringPretty(Duration duration) {
 
 Duration durationFromPartialSeconds({@required double seconds}) {
   return Duration(milliseconds: (seconds * 1000.0).truncate());
+}
+
+double secondsSince(int timerStartEpochMs) {
+  return (DateTime.now().millisecondsSinceEpoch - timerStartEpochMs) / 1000.0;
 }

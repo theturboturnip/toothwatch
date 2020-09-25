@@ -4,12 +4,15 @@ import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:json_annotation/json_annotation.dart';
 import 'package:optional/optional.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toothwatch/toothwatch/models/stopwatch_persistent_state.dart';
 import 'package:toothwatch/toothwatch/bloc/ticker.dart';
 import 'package:toothwatch/toothwatch/interop/foregound_channel.dart';
 import 'package:toothwatch/toothwatch/models/timing_data.dart';
 import 'package:toothwatch/toothwatch/notification/persistent_notification_state.dart';
+import 'package:toothwatch/toothwatch/util/duration_utils.dart';
 
 part 'stopwatch_event.dart';
 part 'stopwatch_state.dart';
@@ -39,45 +42,58 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
     StopwatchEvent event,
   ) async* {
     final newState = await _transitionByEvent(event);
-    if (state.timingData != newState.timingData)
-      await saveTimingData(newState);
+    if (state.getPersistentData() != newState.getPersistentData())
+      await savePersistentData(newState);
     yield newState;
   }
 
   Future<StopwatchState> loadNewStateFromSurroundings() async {
-    TimingData loadedTimingData = await loadTimingData();
-    Optional<PersistentNotificationState> stopwatchNotificationInitState = await _javaTimerControl.getTimerStateAndClose();
+    final loadedPersistentData = await loadPersistentData();
+    Optional<PersistentNotificationState> notificationState = await _javaTimerControl.getTimerStateAndClose();
 
-    if (stopwatchNotificationInitState.isPresent) {
+    if (loadedPersistentData.timerStartEpochMs != null) {
+      if (!notificationState.isPresent) {
+        print("loadedPersistentData had a timer going, but we didn't find a service. Trusting loadedPersistentData first.");
+      }
+
       // NOTE - returning a new state with the correct suspend value is correct.
       //  returning StopwatchIdle and enqueueing a StopwatchStart would *not* be.
       //  this is because we don't know what's queued after us - if we unsuspend and have a suspend directly afterwards, we'd suspend incorrect state.
       _startTicker();
 
-      return StopwatchTicking(loadedTimingData,
-          secondsElapsed: stopwatchNotificationInitState.value.secondsSinceInit());
+      return StopwatchTicking.fromPersistent(loadedPersistentData,
+          secondsElapsed: secondsSince(loadedPersistentData.timerStartEpochMs));
     }
-    return StopwatchIdle(loadedTimingData);
+    return StopwatchIdle(loadedPersistentData.timingData);
   }
 
-  static final String TIMING_DATA_PREF = "TimingData";
+  static final String PERSISTENT_DATA_PREF = "PersistentData";
 
-  void saveTimingData(StopwatchState toSave) async {
-    print("Saving timing data ${toSave.timingData}");
+  void savePersistentData(StopwatchState toSave) async {
+    final persistentData = toSave.getPersistentData();
+    print("Saving timing data ${persistentData}");
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString(TIMING_DATA_PREF, jsonEncode(toSave.timingData.toJson()));
+    prefs.setString(PERSISTENT_DATA_PREF, jsonEncode(persistentData.toJson()));
   }
 
-  Future<TimingData> loadTimingData() async {
-    print("Loading timing data");
+  Future<StopwatchPersistentState> loadPersistentData() async {
+    print("Loading persistent data");
     final prefs = await SharedPreferences.getInstance();
-    final timingDataStr = prefs.getString(TIMING_DATA_PREF);
-    if (timingDataStr == null) {
-      print("Got null timing data");
-      return TimingData.empty();
+    final persistentDataStr = prefs.getString(PERSISTENT_DATA_PREF);
+    if (persistentDataStr != null) {
+      print("Loaded persistent data string $persistentDataStr");
+      try {
+        return StopwatchPersistentState.fromJson(jsonDecode(persistentDataStr));
+      } on FormatException catch(e) {
+        print("Invalid JSON exception ${e} on depersist, returning cleared data");
+        return StopwatchPersistentState.cleared();
+      } on BadKeyException catch(e) {
+        print("Invalid JSON exception ${e} on depersist, returning cleared data");
+        return StopwatchPersistentState.cleared();
+      }
     }
-    print("Got string $timingDataStr");
-    return TimingData.fromJson(jsonDecode(timingDataStr));
+    print("Got null timing data");
+    return StopwatchPersistentState.cleared();
   }
 
   Future<StopwatchState> _transitionByEvent(StopwatchEvent event) async {
@@ -104,12 +120,12 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         } else {
           // Start the timer
           _startTicker();
-          return StopwatchTicking(state.timingData, secondsElapsed: 0);
+          return StopwatchTicking(state.timingData, timerStartEpochMs: _getMillisecondsSinceEpoch(), secondsElapsed: 0);
         }
       } else if (event is StopwatchTicked) {
         if (state is StopwatchTicking)
-          return StopwatchTicking(
-              state.timingData,
+          return StopwatchTicking.fromPersistent(
+              state.getPersistentData(),
               secondsElapsed: (state as StopwatchTicking).secondsElapsed + 0.1);
       } else if (event is StopwatchCleared) {
         return StopwatchIdle(TimingData.empty());
@@ -121,20 +137,21 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         if (state is StopwatchTicking)
           await _javaTimerControl.startTimerService(
               initialState: PersistentNotificationState(
-                timerSecondsElapsedAtStart: (state as StopwatchTicking).secondsElapsed,
-                timerMillisecondsEpochAtStart: DateTime.now().millisecondsSinceEpoch,
+                timerStartEpochMs: (state as StopwatchTicking).timerStartEpochMs,
                 previousSumTimes: state.timingData.sumTimes,
                 expectedTotalTimeSeconds: state.timingData.expectedTotalTimeSeconds
               )
           );
 
-        return StopwatchSuspended(state.timingData);
+        return StopwatchSuspended(state.getPersistentData());
       }
     }
 
     print("Got unhandled event $event while in state $state");
     return state;
   }
+
+  int _getMillisecondsSinceEpoch() => DateTime.now().millisecondsSinceEpoch;
 
   void _startTicker() {
     _stopTicker();

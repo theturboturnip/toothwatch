@@ -8,18 +8,17 @@ part 'persistent_notification_state.g.dart';
 
 @JsonSerializable()
 class PersistentNotificationState {
-  final double timerSecondsElapsedAtStart;
-  final int timerMillisecondsEpochAtStart;
+  final int timerStartEpochMs;
   final double previousSumTimes;
   final double expectedTotalTimeSeconds;
 
-  const PersistentNotificationState({@required this.timerSecondsElapsedAtStart, @required this.timerMillisecondsEpochAtStart, @required this.previousSumTimes, @required this.expectedTotalTimeSeconds});
+  const PersistentNotificationState({@required this.timerStartEpochMs, @required this.previousSumTimes, @required this.expectedTotalTimeSeconds});
 
   factory PersistentNotificationState.fromJson(Map<String, dynamic> json) => _$PersistentNotificationStateFromJson(json);
   Map<String, dynamic> toJson() => _$PersistentNotificationStateToJson(this);
 
   double secondsSinceInit() {
-    return timerSecondsElapsedAtStart + (DateTime.now().millisecondsSinceEpoch - timerMillisecondsEpochAtStart) / 1000.0;
+    return secondsSince(timerStartEpochMs);
   }
   double totalSecondsRemaining() {
     return expectedTotalTimeSeconds - secondsSinceInit() - previousSumTimes;

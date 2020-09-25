@@ -9,9 +9,7 @@ part of 'persistent_notification_state.dart';
 PersistentNotificationState _$PersistentNotificationStateFromJson(
     Map<String, dynamic> json) {
   return PersistentNotificationState(
-    timerSecondsElapsedAtStart:
-        (json['timerSecondsElapsedAtStart'] as num)?.toDouble(),
-    timerMillisecondsEpochAtStart: json['timerMillisecondsEpochAtStart'] as int,
+    timerStartEpochMs: json['timerStartEpochMs'] as int,
     previousSumTimes: (json['previousSumTimes'] as num)?.toDouble(),
     expectedTotalTimeSeconds:
         (json['expectedTotalTimeSeconds'] as num)?.toDouble(),
@@ -21,8 +19,7 @@ PersistentNotificationState _$PersistentNotificationStateFromJson(
 Map<String, dynamic> _$PersistentNotificationStateToJson(
         PersistentNotificationState instance) =>
     <String, dynamic>{
-      'timerSecondsElapsedAtStart': instance.timerSecondsElapsedAtStart,
-      'timerMillisecondsEpochAtStart': instance.timerMillisecondsEpochAtStart,
+      'timerStartEpochMs': instance.timerStartEpochMs,
       'previousSumTimes': instance.previousSumTimes,
       'expectedTotalTimeSeconds': instance.expectedTotalTimeSeconds,
     };

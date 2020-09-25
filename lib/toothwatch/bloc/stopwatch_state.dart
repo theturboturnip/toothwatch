@@ -5,6 +5,8 @@ abstract class StopwatchState extends Equatable {
 
   const StopwatchState(this.timingData);
 
+  StopwatchPersistentState getPersistentData() => StopwatchPersistentState(timingData: timingData);
+
   @override
   List<Object> get props => [timingData];
 }
@@ -18,13 +20,23 @@ class StopwatchIdle extends StopwatchState {
 }
 
 class StopwatchSuspended extends StopwatchState {
-  const StopwatchSuspended(TimingData timingData) : super(timingData);
+  final int timerStartEpochMs;
+
+  StopwatchSuspended(StopwatchPersistentState persistentState) : this.timerStartEpochMs = persistentState.timerStartEpochMs, super(persistentState.timingData);
+
+  @override
+  StopwatchPersistentState getPersistentData() => StopwatchPersistentState(timingData: timingData, timerStartEpochMs: timerStartEpochMs);
 }
 
 class StopwatchTicking extends StopwatchState {
   final double secondsElapsed;
+  final int timerStartEpochMs;
 
-  const StopwatchTicking(TimingData timingData, {@required this.secondsElapsed}) : super(timingData);
+  const StopwatchTicking(TimingData timingData, {@required this.timerStartEpochMs, @required this.secondsElapsed}) : super(timingData);
+  StopwatchTicking.fromPersistent(StopwatchPersistentState persistentState, {@required double secondsElapsed}) : this(persistentState.timingData, timerStartEpochMs: persistentState.timerStartEpochMs, secondsElapsed: secondsElapsed);
+
+  @override
+  StopwatchPersistentState getPersistentData() => StopwatchPersistentState(timingData: timingData, timerStartEpochMs: timerStartEpochMs);
 
   @override
   List<Object> get props => [timingData, secondsElapsed];
