@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:toothwatch/toothwatch/notification/notification_init_state.dart';
+import 'package:toothwatch/toothwatch/notification/persistent_notification_state.dart';
 
 void backgroundChannel() {
   const MethodChannel _background = MethodChannel(

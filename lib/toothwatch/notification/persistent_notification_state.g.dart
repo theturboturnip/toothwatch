@@ -1,14 +1,14 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'notification_init_state.dart';
+part of 'persistent_notification_state.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-NotificationInitState _$NotificationInitStateFromJson(
+PersistentNotificationState _$PersistentNotificationStateFromJson(
     Map<String, dynamic> json) {
-  return NotificationInitState(
+  return PersistentNotificationState(
     timerSecondsElapsedAtStart:
         (json['timerSecondsElapsedAtStart'] as num)?.toDouble(),
     timerMillisecondsEpochAtStart: json['timerMillisecondsEpochAtStart'] as int,
@@ -18,8 +18,8 @@ NotificationInitState _$NotificationInitStateFromJson(
   );
 }
 
-Map<String, dynamic> _$NotificationInitStateToJson(
-        NotificationInitState instance) =>
+Map<String, dynamic> _$PersistentNotificationStateToJson(
+        PersistentNotificationState instance) =>
     <String, dynamic>{
       'timerSecondsElapsedAtStart': instance.timerSecondsElapsedAtStart,
       'timerMillisecondsEpochAtStart': instance.timerMillisecondsEpochAtStart,

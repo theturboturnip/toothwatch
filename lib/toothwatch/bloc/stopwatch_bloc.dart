@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toothwatch/toothwatch/bloc/ticker.dart';
 import 'package:toothwatch/toothwatch/interop/foregound_channel.dart';
 import 'package:toothwatch/toothwatch/models/timing_data.dart';
-import 'package:toothwatch/toothwatch/notification/notification_init_state.dart';
+import 'package:toothwatch/toothwatch/notification/persistent_notification_state.dart';
 
 part 'stopwatch_event.dart';
 part 'stopwatch_state.dart';
@@ -46,7 +46,7 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
 
   Future<StopwatchState> loadNewStateFromSurroundings() async {
     TimingData loadedTimingData = await loadTimingData();
-    Optional<NotificationInitState> stopwatchNotificationInitState = await _javaTimerControl.getTimerStateAndClose();
+    Optional<PersistentNotificationState> stopwatchNotificationInitState = await _javaTimerControl.getTimerStateAndClose();
 
     if (stopwatchNotificationInitState.isPresent) {
       // NOTE - returning a new state with the correct suspend value is correct.
@@ -120,7 +120,7 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         _stopTicker();
         if (state is StopwatchTicking)
           await _javaTimerControl.startTimerService(
-              initialState: NotificationInitState(
+              initialState: PersistentNotificationState(
                 timerSecondsElapsedAtStart: (state as StopwatchTicking).secondsElapsed,
                 timerMillisecondsEpochAtStart: DateTime.now().millisecondsSinceEpoch,
                 previousSumTimes: state.timingData.sumTimes,

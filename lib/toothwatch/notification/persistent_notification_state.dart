@@ -4,19 +4,19 @@ import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:toothwatch/toothwatch/util/duration_utils.dart';
 
-part 'notification_init_state.g.dart';
+part 'persistent_notification_state.g.dart';
 
 @JsonSerializable()
-class NotificationInitState {
+class PersistentNotificationState {
   final double timerSecondsElapsedAtStart;
   final int timerMillisecondsEpochAtStart;
   final double previousSumTimes;
   final double expectedTotalTimeSeconds;
 
-  const NotificationInitState({@required this.timerSecondsElapsedAtStart, @required this.timerMillisecondsEpochAtStart, @required this.previousSumTimes, @required this.expectedTotalTimeSeconds});
+  const PersistentNotificationState({@required this.timerSecondsElapsedAtStart, @required this.timerMillisecondsEpochAtStart, @required this.previousSumTimes, @required this.expectedTotalTimeSeconds});
 
-  factory NotificationInitState.fromJson(Map<String, dynamic> json) => _$NotificationInitStateFromJson(json);
-  Map<String, dynamic> toJson() => _$NotificationInitStateToJson(this);
+  factory PersistentNotificationState.fromJson(Map<String, dynamic> json) => _$PersistentNotificationStateFromJson(json);
+  Map<String, dynamic> toJson() => _$PersistentNotificationStateToJson(this);
 
   double secondsSinceInit() {
     return timerSecondsElapsedAtStart + (DateTime.now().millisecondsSinceEpoch - timerMillisecondsEpochAtStart) / 1000.0;
@@ -39,14 +39,14 @@ class NotificationText {
 
 double computeNotificationTimerSeconds(String notificationInitStateJson) {
   Map initStateMap = jsonDecode(notificationInitStateJson);
-  final initState = NotificationInitState.fromJson(initStateMap);
+  final initState = PersistentNotificationState.fromJson(initStateMap);
 
   return initState.secondsSinceInit();
 }
 
 NotificationText computeNewNotificationText(String notificationInitStateJson) {
   Map initStateMap = jsonDecode(notificationInitStateJson);
-  final initState = NotificationInitState.fromJson(initStateMap);
+  final initState = PersistentNotificationState.fromJson(initStateMap);
   final timeRemaining = durationFromPartialSeconds(seconds: initState.totalSecondsRemaining());
   final timeSinceInit = durationFromPartialSeconds(seconds: initState.secondsSinceInit());
 
