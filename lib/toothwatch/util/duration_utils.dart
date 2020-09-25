@@ -19,27 +19,27 @@ String _printUnitPretty(int value, String unit) {
 String durationToStringPretty(Duration duration) {
   assert(!duration.isNegative);
 
-  final hours = duration.inHours;
+  //final hours = duration.inHours;
   final minutes = duration.inMinutes % 60;
   final seconds = duration.inSeconds % 60;
 
-  final String hourStr = _printUnitPretty(hours, "hr");
+  //final String hourStr = _printUnitPretty(hours, "hr");
   final String minuteStr = _printUnitPretty(minutes, "min");
   final String secondStr = _printUnitPretty(seconds, "second");
 
-  if (hours > 0) {
-    if (minutes > 0) {
-      return "$hourStr $minuteStr";
-    } else {
-      return hourStr;
-    }
-  } else {
+  //if (hours > 0) {
     if (minutes > 0) {
       return minuteStr;
     } else {
       return secondStr;
     }
-  }
+  // } else {
+  //   if (minutes > 0) {
+  //     return minuteStr;
+  //   } else {
+  //     return secondStr;
+  //   }
+  // }
 }
 
 String remainingDurationToStringPretty(Duration duration) {
