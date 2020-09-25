@@ -28,17 +28,28 @@ class TimerService : Service() {
     private var handler: Handler? = null
     private val notificationUpdateRunner = object : Runnable {
         override fun run() {
-            _createNotification { notification ->
+            _evalNotificationDart { res ->
                 val handler = (this@TimerService).handler
                 if (handler != null) {
 //                    Log.i(TAG, "Updating notif")
+                    val persistentNotification = createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res["persistentNotificationText"] as Map<String, Any>)
+                            .setOngoing(true)
+                            .setOnlyAlertOnce(true)
+                            .build()
                     val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    mNotificationManager.notify(PERSIST_NOTIFICATION_ID, notification)
+                    mNotificationManager.notify(PERSIST_NOTIFICATION_ID, persistentNotification)
+
+                    val alertNotificationMap = res["alertNotificationText"] as Map<String, Any>?
+                    if (alertNotificationMap != null) {
+                        val alertNotification = createNotificationFromNotificationText(ALERT_NOTIFICATION_CHANNEL_ID, alertNotificationMap)
+                                .build()
+                        mNotificationManager.notify(ALERT_NOTIFICATION_ID, alertNotification)
+                    }
 
                     // Post slightly more frequently than every second because this function takes time
                     // we don't want to skip over a second and look unresponsive
                     // If the TimerService.handler is set to null, then it doesn't re-post
-                    handler.postDelayed(this, 500)
+                    handler.postDelayed(this, (res["nextNotificationDelayMillis"] as Int).toLong())
                 } else {
 //                    Log.i(TAG, "Not updating notif")
                 }
@@ -53,6 +64,7 @@ class TimerService : Service() {
         const val PERSIST_NOTIFICATION_ID = 1;
 
         const val ALERT_NOTIFICATION_CHANNEL_ID = "ToothwatchTimerAlerts";
+        const val ALERT_NOTIFICATION_ID = 2;
     }
 
     inner class TimerBinder : Binder() {
@@ -111,21 +123,27 @@ class TimerService : Service() {
         }
     }
 
-    private fun _createNotification(callback: (Notification) -> Unit) {
+    private fun _evalNotificationDart(callback: (Map<String, Any>) -> Unit) {
         _getFlutterChannel().invokeMethod(
                 "getNotificationJSON",
                 notificationStaticStateJSON,
-                ResultCallback {
-                    result ->
+                ResultCallback { result ->
                     val res = result as Map<String, Any>
                     this.notificationStaticStateJSON = res["newPersistentStateJSONStr"] as String
-                    val notification = createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res["persistentNotificationText"] as Map<String, Any>)
-                            .setOngoing(true)
-                            .setOnlyAlertOnce(true)
-                            .build()
-                    callback(notification)
+                    callback(res)
                 }
         )
+    }
+
+    private fun _createNotification(callback: (Notification) -> Unit) {
+        _evalNotificationDart {
+            res ->
+            val notification = createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res["persistentNotificationText"] as Map<String, Any>)
+                    .setOngoing(true)
+                    .setOnlyAlertOnce(true)
+                    .build()
+            callback(notification)
+        }
     }
 
     fun createNotificationFromNotificationText(channel_id: String, notificationText: Map<String, Any>) : NotificationCompat.Builder {

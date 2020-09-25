@@ -10,9 +10,11 @@ PersistentNotificationState _$PersistentNotificationStateFromJson(
     Map<String, dynamic> json) {
   return PersistentNotificationState(
     timerStartEpochMs: json['timerStartEpochMs'] as int,
-    previousSumTimes: (json['previousSumTimes'] as num)?.toDouble(),
+    sumTimes: (json['sumTimes'] as num)?.toDouble(),
     expectedTotalTimeSeconds:
         (json['expectedTotalTimeSeconds'] as num)?.toDouble(),
+    previousSecondsSinceInit:
+        (json['previousSecondsSinceInit'] as num)?.toDouble(),
   );
 }
 
@@ -20,8 +22,9 @@ Map<String, dynamic> _$PersistentNotificationStateToJson(
         PersistentNotificationState instance) =>
     <String, dynamic>{
       'timerStartEpochMs': instance.timerStartEpochMs,
-      'previousSumTimes': instance.previousSumTimes,
+      'sumTimes': instance.sumTimes,
       'expectedTotalTimeSeconds': instance.expectedTotalTimeSeconds,
+      'previousSecondsSinceInit': instance.previousSecondsSinceInit,
     };
 
 PersistentNotificationEvalData _$PersistentNotificationEvalDataFromJson(
@@ -36,6 +39,7 @@ PersistentNotificationEvalData _$PersistentNotificationEvalDataFromJson(
         ? null
         : NotificationText.fromJson(
             json['alertNotificationText'] as Map<String, dynamic>),
+    nextNotificationDelayMillis: json['nextNotificationDelayMillis'] as int,
   );
 }
 
@@ -46,4 +50,5 @@ Map<String, dynamic> _$PersistentNotificationEvalDataToJson(
       'persistentNotificationText':
           instance.persistentNotificationText?.toJson(),
       'alertNotificationText': instance.alertNotificationText?.toJson(),
+      'nextNotificationDelayMillis': instance.nextNotificationDelayMillis,
     };

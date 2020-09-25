@@ -131,11 +131,7 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
 
   void _startService(StopwatchTicking state) async {
     await _javaTimerControl.startTimerService(
-        initialState: PersistentNotificationState(
-            timerStartEpochMs: state.timerStartEpochMs,
-            previousSumTimes: state.timingData.sumTimes,
-            expectedTotalTimeSeconds: state.timingData.expectedTotalTimeSeconds
-        )
+        initialState: PersistentNotificationState.fromStopwatchState(state.getPersistentData())
     );
   }
   void _closeServiceIfPresent() async => await _javaTimerControl.closeTimerServiceIfPresent();
