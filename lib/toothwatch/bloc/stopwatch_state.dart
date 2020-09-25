@@ -19,14 +19,14 @@ class StopwatchIdle extends StopwatchState {
   const StopwatchIdle(TimingData timingData) : super(timingData);
 }
 
-class StopwatchSuspended extends StopwatchState {
-  final int timerStartEpochMs;
-
-  StopwatchSuspended(StopwatchPersistentState persistentState) : this.timerStartEpochMs = persistentState.timerStartEpochMs, super(persistentState.timingData);
-
-  @override
-  StopwatchPersistentState getPersistentData() => StopwatchPersistentState(timingData: timingData, timerStartEpochMs: timerStartEpochMs);
-}
+// class StopwatchSuspended extends StopwatchState {
+//   final int timerStartEpochMs;
+//
+//   StopwatchSuspended(StopwatchPersistentState persistentState) : this.timerStartEpochMs = persistentState.timerStartEpochMs, super(persistentState.timingData);
+//
+//   @override
+//   StopwatchPersistentState getPersistentData() => StopwatchPersistentState(timingData: timingData, timerStartEpochMs: timerStartEpochMs);
+// }
 
 class StopwatchTicking extends StopwatchState {
   final double secondsElapsed;

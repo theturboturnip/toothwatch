@@ -43,26 +43,23 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
   ) async* {
     final newState = await _transitionByEvent(event);
     if (state.getPersistentData() != newState.getPersistentData())
-      await savePersistentData(newState);
+      savePersistentData(newState);
     yield newState;
   }
 
   Future<StopwatchState> loadNewStateFromSurroundings() async {
     final loadedPersistentData = await loadPersistentData();
-    Optional<PersistentNotificationState> notificationState = await _javaTimerControl.getTimerStateAndClose();
+    _closeServiceIfPresent();
 
     if (loadedPersistentData.timerStartEpochMs != null) {
-      if (!notificationState.isPresent) {
-        print("loadedPersistentData had a timer going, but we didn't find a service. Trusting loadedPersistentData first.");
-      }
-
       // NOTE - returning a new state with the correct suspend value is correct.
       //  returning StopwatchIdle and enqueueing a StopwatchStart would *not* be.
       //  this is because we don't know what's queued after us - if we unsuspend and have a suspend directly afterwards, we'd suspend incorrect state.
       _startTicker();
-
-      return StopwatchTicking.fromPersistent(loadedPersistentData,
+      final newState = StopwatchTicking.fromPersistent(loadedPersistentData,
           secondsElapsed: secondsSince(loadedPersistentData.timerStartEpochMs));
+      _startService(newState);
+      return newState;
     }
     return StopwatchIdle(loadedPersistentData.timingData);
   }
@@ -101,26 +98,22 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
       if (event is StopwatchLoad) {
         return loadNewStateFromSurroundings();
       }
-    } else if (state is StopwatchSuspended) {
-      // Only accept Unsuspend or Serialize events
-      if (event is StopwatchUnsuspend) {
-        print("Unsuspending!");
-
-        return loadNewStateFromSurroundings();
-      }
     } else {
       if (event is StopwatchToggled) {
         // Cancel the timer - this could be done
         if (state is StopwatchTicking) {
           // Stopped timing
           _stopTicker();
+          _closeServiceIfPresent();
           return StopwatchIdle(
               state.timingData.withNewTime(
                   (state as StopwatchTicking).secondsElapsed));
         } else {
           // Start the timer
           _startTicker();
-          return StopwatchTicking(state.timingData, timerStartEpochMs: _getMillisecondsSinceEpoch(), secondsElapsed: 0);
+          final newState = StopwatchTicking(state.timingData, timerStartEpochMs: _getMillisecondsSinceEpoch(), secondsElapsed: 0);
+          _startService(newState);
+          return newState;
         }
       } else if (event is StopwatchTicked) {
         if (state is StopwatchTicking)
@@ -129,27 +122,23 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
               secondsElapsed: (state as StopwatchTicking).secondsElapsed + 0.1);
       } else if (event is StopwatchCleared) {
         return StopwatchIdle(TimingData.empty());
-      } else if (event is StopwatchSuspend) {
-        print("Suspending!");
-
-        // Kick off the background timer if necessary
-        _stopTicker();
-        if (state is StopwatchTicking)
-          await _javaTimerControl.startTimerService(
-              initialState: PersistentNotificationState(
-                timerStartEpochMs: (state as StopwatchTicking).timerStartEpochMs,
-                previousSumTimes: state.timingData.sumTimes,
-                expectedTotalTimeSeconds: state.timingData.expectedTotalTimeSeconds
-              )
-          );
-
-        return StopwatchSuspended(state.getPersistentData());
       }
     }
 
     print("Got unhandled event $event while in state $state");
     return state;
   }
+
+  void _startService(StopwatchTicking state) async {
+    await _javaTimerControl.startTimerService(
+        initialState: PersistentNotificationState(
+            timerStartEpochMs: state.timerStartEpochMs,
+            previousSumTimes: state.timingData.sumTimes,
+            expectedTotalTimeSeconds: state.timingData.expectedTotalTimeSeconds
+        )
+    );
+  }
+  void _closeServiceIfPresent() async => await _javaTimerControl.closeTimerServiceIfPresent();
 
   int _getMillisecondsSinceEpoch() => DateTime.now().millisecondsSinceEpoch;
 

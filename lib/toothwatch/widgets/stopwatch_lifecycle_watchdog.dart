@@ -35,21 +35,21 @@ class _AppSuspendWatchdogState extends State<StopwatchLifecycleWatchdog> with Wi
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    switch(state) {
-      case AppLifecycleState.resumed:
-        widget.bloc.add(StopwatchUnsuspend());
-        break;
-      case AppLifecycleState.paused:
-        widget.bloc.add(StopwatchSuspend());
-        break;
-
-      case AppLifecycleState.inactive:
-      // TODO: Handle this case.
-        break;
-      case AppLifecycleState.detached:
-      // TODO: Handle this case.
-        break;
-    }
+    // switch(state) {
+    //   case AppLifecycleState.resumed:
+    //     widget.bloc.add(StopwatchUnsuspend());
+    //     break;
+    //   case AppLifecycleState.paused:
+    //     widget.bloc.add(StopwatchSuspend());
+    //     break;
+    //
+    //   case AppLifecycleState.inactive:
+    //   // TODO: Handle this case.
+    //     break;
+    //   case AppLifecycleState.detached:
+    //   // TODO: Handle this case.
+    //     break;
+    // }
   }
 
   @override

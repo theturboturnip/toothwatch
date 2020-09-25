@@ -14,11 +14,7 @@ class ForegroundChannel {
     });
   }
 
-  Future<Optional<PersistentNotificationState>> getTimerStateAndClose() async {
-    String timerStateJSON = await platform.invokeMethod<String>('getTimerStateAndClose');
-    if (timerStateJSON == null)
-      return Optional.empty();
-    else
-      return Optional.of(PersistentNotificationState.fromJson(jsonDecode(timerStateJSON)));
+  Future<void> closeTimerServiceIfPresent() async {
+    await platform.invokeMethod<String>('closeTimerServiceIfPresent');
   }
 }

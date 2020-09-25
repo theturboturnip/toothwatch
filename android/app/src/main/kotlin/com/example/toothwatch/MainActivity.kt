@@ -23,9 +23,9 @@ class MainActivity: FlutterActivity() {
                 } else if (call.method == "startTimerService") {
                     startTimerService(call.argument<String>("stateJson") ?: "");
                     result.success(null);
-                } else if (call.method == "getTimerStateAndClose") {
-                    val timerSeconds = getTimerStateAndClose()
-                    result.success(timerSeconds)
+                } else if (call.method == "closeTimerServiceIfPresent") {
+                    closeTimerServiceIfPresent()
+                    result.success(null)
                 } else {
                     result.notImplemented()
                 }
@@ -40,10 +40,7 @@ class MainActivity: FlutterActivity() {
         bindService(service, connection, 0)
     }
 
-    private fun getTimerStateAndClose() : String? {
-        val timerService = connection.timerService
-        val timerSeconds = timerService?.getNotificationStaticState();
-
+    private fun closeTimerServiceIfPresent() {
         val service = Intent(this, TimerService::class.java)
         if (connection.timerService != null) {
             Log.i(TAG, "Unbinding service as was not null")
@@ -51,8 +48,6 @@ class MainActivity: FlutterActivity() {
         }
         Log.i(TAG, "Stopping service")
         stopService(service)
-
-        return timerSeconds
     }
 
     private val connection = object : ServiceConnection {
