@@ -23,16 +23,3 @@ Map<String, dynamic> _$PersistentNotificationStateToJson(
       'previousSumTimes': instance.previousSumTimes,
       'expectedTotalTimeSeconds': instance.expectedTotalTimeSeconds,
     };
-
-NotificationText _$NotificationTextFromJson(Map<String, dynamic> json) {
-  return NotificationText(
-    title: json['title'] as String,
-    subtitle: json['subtitle'] as String,
-  );
-}
-
-Map<String, dynamic> _$NotificationTextToJson(NotificationText instance) =>
-    <String, dynamic>{
-      'title': instance.title,
-      'subtitle': instance.subtitle,
-    };
