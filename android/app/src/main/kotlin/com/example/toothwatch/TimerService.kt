@@ -15,7 +15,6 @@ import io.flutter.view.FlutterMain
 import io.flutter.view.FlutterNativeView
 import io.flutter.view.FlutterRunArguments
 import java.lang.RuntimeException
-import java.util.*
 
 
 class TimerService : Service() {
@@ -34,7 +33,7 @@ class TimerService : Service() {
                 if (handler != null) {
 //                    Log.i(TAG, "Updating notif")
                     val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    mNotificationManager.notify(NOTIFICATION_ID, notification)
+                    mNotificationManager.notify(PERSIST_NOTIFICATION_ID, notification)
 
                     // Post slightly more frequently than every second because this function takes time
                     // we don't want to skip over a second and look unresponsive
@@ -50,18 +49,16 @@ class TimerService : Service() {
     companion object {
         const val STATE_JSON_ID = "TimerService.StateJSON";
 
-        const val NOTIFICATION_CHANNEL_ID = "ToothwatchTimerServiceNotifications";
-        const val NOTIFICATION_ID = 1;
+        const val PERSIST_NOTIFICATION_CHANNEL_ID = "ToothwatchTimerPersistent";
+        const val PERSIST_NOTIFICATION_ID = 1;
+
+        const val ALERT_NOTIFICATION_CHANNEL_ID = "ToothwatchTimerAlerts";
     }
 
     inner class TimerBinder : Binder() {
         fun getService() : TimerService {
             return this@TimerService;
         }
-    }
-
-    fun getNotificationStaticState() : String {
-        return notificationStaticStateJSON;
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -77,10 +74,11 @@ class TimerService : Service() {
 
         _getFlutterChannel()
 
-        _createNotificationChannel()
+        _createNotificationChannel(PERSIST_NOTIFICATION_CHANNEL_ID, "Persistent Timer Notification")
+        _createNotificationChannel(ALERT_NOTIFICATION_CHANNEL_ID, "Timer Alerts")
         handler = Handler()
         _createNotification { notification ->
-            startForeground(NOTIFICATION_ID, notification)
+            startForeground(PERSIST_NOTIFICATION_ID, notification)
 
             // The handler may be null here, in which case the onDestroy must have been called before this finished.
             // In that case, don't update the notification
@@ -92,13 +90,12 @@ class TimerService : Service() {
     }
 
     override fun onDestroy() {
-
         handler?.removeCallbacksAndMessages(null)
         handler?.removeCallbacks(notificationUpdateRunner)
         handler = null
 
         val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        mNotificationManager.cancel(NOTIFICATION_ID);
+        mNotificationManager.cancel(PERSIST_NOTIFICATION_ID)
     }
 
     class ResultCallback(val callback: (Any?) -> Unit) : MethodChannel.Result {
@@ -115,40 +112,38 @@ class TimerService : Service() {
     }
 
     private fun _createNotification(callback: (Notification) -> Unit) {
-        val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(this,
-                0, notificationIntent, 0)
-
-        // https://stackoverflow.com/a/54097773/4248422
-//        val secs = getElapsedSeconds().toInt()
-//        val formattedTime = "${(secs / 60).toString().padStart(2, '0')}:${(secs % 60).toString().padStart(2, '0')}"
-
         _getFlutterChannel().invokeMethod(
                 "getNotificationJSON",
                 notificationStaticStateJSON,
                 ResultCallback {
                     result ->
-                        val res = result as Map<String, Any>
-                        val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                                .setContentTitle(res["title"] as? String)
-                                .setContentText(res["subtitle"] as? String)
-                                .setSmallIcon(R.drawable.ic_baseline_child_care_24)
-                                .setContentIntent(pendingIntent)
-                                .setOngoing(true)
-                                .setOnlyAlertOnce(true)
-                                .build()
-                        callback(notification)
+                    val res = result as Map<String, Any>
+                    val notification = createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res)
+                            .setOngoing(true)
+                            .setOnlyAlertOnce(true)
+                            .build()
+                    callback(notification)
                 }
-                );
-
-
+        )
     }
 
-    private fun _createNotificationChannel() {
+    fun createNotificationFromNotificationText(channel_id: String, notificationText: Map<String, Any>) : NotificationCompat.Builder {
+        val notificationIntent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(this,
+                0, notificationIntent, 0)
+
+        return NotificationCompat.Builder(this, channel_id)
+                .setContentTitle(notificationText["title"] as? String)
+                .setContentText(notificationText["subtitle"] as? String)
+                .setSmallIcon(R.drawable.ic_baseline_child_care_24)
+                .setContentIntent(pendingIntent)
+    }
+
+    private fun _createNotificationChannel(notificationChannelId: String, name: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
-                    NOTIFICATION_CHANNEL_ID,
-                    "Foreground Service Channel",
+                    notificationChannelId,
+                    name,
                     NotificationManager.IMPORTANCE_DEFAULT
             )
             val manager: NotificationManager = getSystemService(NotificationManager::class.java)
