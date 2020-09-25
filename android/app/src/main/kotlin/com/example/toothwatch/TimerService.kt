@@ -32,7 +32,7 @@ class TimerService : Service() {
                 val handler = (this@TimerService).handler
                 if (handler != null) {
 //                    Log.i(TAG, "Updating notif")
-                    val persistentNotification = createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res["persistentNotificationText"] as Map<String, Any>)
+                    val persistentNotification = _createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res["persistentNotificationText"] as Map<String, Any>)
                             .setOngoing(true)
                             .setOnlyAlertOnce(true)
                             .build()
@@ -41,7 +41,7 @@ class TimerService : Service() {
 
                     val alertNotificationMap = res["alertNotificationText"] as Map<String, Any>?
                     if (alertNotificationMap != null) {
-                        val alertNotification = createNotificationFromNotificationText(ALERT_NOTIFICATION_CHANNEL_ID, alertNotificationMap)
+                        val alertNotification = _createNotificationFromNotificationText(ALERT_NOTIFICATION_CHANNEL_ID, alertNotificationMap)
                                 .build()
                         mNotificationManager.notify(ALERT_NOTIFICATION_ID, alertNotification)
                     }
@@ -87,7 +87,7 @@ class TimerService : Service() {
         _getFlutterChannel()
 
         _createNotificationChannel(PERSIST_NOTIFICATION_CHANNEL_ID, "Persistent Timer Notification")
-        _createNotificationChannel(ALERT_NOTIFICATION_CHANNEL_ID, "Timer Alerts")
+        _createNotificationChannel(ALERT_NOTIFICATION_CHANNEL_ID, "Timer Alerts", NotificationManager.IMPORTANCE_HIGH)
         handler = Handler()
         _createNotification { notification ->
             startForeground(PERSIST_NOTIFICATION_ID, notification)
@@ -138,7 +138,7 @@ class TimerService : Service() {
     private fun _createNotification(callback: (Notification) -> Unit) {
         _evalNotificationDart {
             res ->
-            val notification = createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res["persistentNotificationText"] as Map<String, Any>)
+            val notification = _createNotificationFromNotificationText(PERSIST_NOTIFICATION_CHANNEL_ID, res["persistentNotificationText"] as Map<String, Any>)
                     .setOngoing(true)
                     .setOnlyAlertOnce(true)
                     .build()
@@ -146,7 +146,7 @@ class TimerService : Service() {
         }
     }
 
-    fun createNotificationFromNotificationText(channel_id: String, notificationText: Map<String, Any>) : NotificationCompat.Builder {
+    private fun _createNotificationFromNotificationText(channel_id: String, notificationText: Map<String, Any>) : NotificationCompat.Builder {
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(this,
                 0, notificationIntent, 0)
@@ -158,12 +158,12 @@ class TimerService : Service() {
                 .setContentIntent(pendingIntent)
     }
 
-    private fun _createNotificationChannel(notificationChannelId: String, name: String) {
+    private fun _createNotificationChannel(notificationChannelId: String, name: String, importance: Int = NotificationManager.IMPORTANCE_DEFAULT) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                     notificationChannelId,
                     name,
-                    NotificationManager.IMPORTANCE_DEFAULT
+                    importance
             )
             val manager: NotificationManager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(serviceChannel)
