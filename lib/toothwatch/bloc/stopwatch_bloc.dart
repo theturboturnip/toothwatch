@@ -53,6 +53,7 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
 
     if (loadedPersistentData.timerStartEpochMs != null) {
       final MAX_SECONDS_WITHOUT_SERVICE = 15.0 * 60.0;
+      // TODO - Remove this? It feels really weird, and the only consequence it prevents is a too-long time which *should* be resolvable through other means anyway
       if (!wasStoppedSafely)
         print("App was not stopped safely");
       // If we were force quitted, cap the length we add. We don't want to unfairly punish the user for their phone dying
