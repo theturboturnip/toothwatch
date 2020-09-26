@@ -48,12 +48,15 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
 
   Future<StopwatchState> loadNewStateFromSurroundings() async {
     final loadedPersistentData = await loadPersistentData();
-    final hadService = await _closeServiceIfPresent();
+    await _closeServiceIfPresent();
+    final wasStoppedSafely = await _getIfDestroyedSafely();
 
     if (loadedPersistentData.timerStartEpochMs != null) {
       final MAX_SECONDS_WITHOUT_SERVICE = 15.0 * 60.0;
-      // If we don't have a service, we assume that something weird has happened - the phone may have died, or the user may have force quit the app. In that case, the user may have put their teeth back in if it took a long time, so give them the benefit of the doubt.
-      if (!hadService && secondsSince(loadedPersistentData.timerStartEpochMs) > MAX_SECONDS_WITHOUT_SERVICE) {
+      if (!wasStoppedSafely)
+        print("App was not stopped safely");
+      // If we were force quitted, cap the length we add. We don't want to unfairly punish the user for their phone dying
+      if (!wasStoppedSafely && secondsSince(loadedPersistentData.timerStartEpochMs) > MAX_SECONDS_WITHOUT_SERVICE) {
         print("No service found, and the time we would add exceeds the maximum. Only adding the maximum.");
         return StopwatchIdle(
             loadedPersistentData.timingData.withNewTime(MAX_SECONDS_WITHOUT_SERVICE));
@@ -143,7 +146,8 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         initialState: PersistentNotificationState.fromStopwatchState(state.getPersistentData())
     );
   }
-  Future<bool> _closeServiceIfPresent() async => _javaTimerControl.closeTimerServiceIfPresent();
+  Future<void> _closeServiceIfPresent() async => await _javaTimerControl.closeTimerServiceIfPresent();
+  Future<bool> _getIfDestroyedSafely() async => await _javaTimerControl.getIfDestroyedSafely();
 
   int _getMillisecondsSinceEpoch() => DateTime.now().millisecondsSinceEpoch;
 

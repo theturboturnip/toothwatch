@@ -1,10 +1,10 @@
 package com.example.toothwatch
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
+import android.os.Bundle
 import android.os.IBinder
+import android.os.PersistableBundle
+import android.preference.PreferenceManager
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -13,6 +13,17 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity: FlutterActivity() {
     val TAG = "MainActivity"
     private val FLUTTER_CHANNEL = "com.example.toothwatch/timer";
+    private val DESTROYED_SAFELY_PREF = "ToothwatchDestroyedSafely"
+    var wasDestroyedSafely : Boolean = false;
+
+    override fun onStart() {
+        super.onStart()
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        wasDestroyedSafely = prefs.getBoolean(DESTROYED_SAFELY_PREF, false)
+        // Set it to false, so if we stop abnormally it is left unchanged and we can pick that up later.
+        prefs.edit().putBoolean(DESTROYED_SAFELY_PREF, false).apply()
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -26,16 +37,23 @@ class MainActivity: FlutterActivity() {
                 } else if (call.method == "closeTimerServiceIfPresent") {
                     val hadService = closeTimerServiceIfPresent()
                     result.success(hadService)
+                } else if (call.method == "getIfDestroyedSafely") {
+                    result.success(wasDestroyedSafely)
                 } else {
                     result.notImplemented()
                 }
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        closeTimerServiceIfPresent()
-        // TODO - This should probably stop the timer - this used to be implicit(?) before, because state was tied to the notification. But now that it isn't, the app can """keep counting""" while the notification isn't up.
+    override fun onStop() {
+        super.onStop()
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        // We are being safely destroyed
+        prefs.edit().putBoolean(DESTROYED_SAFELY_PREF, true).apply()
+
+        // TODO - stop leaking timer service?
+        unbindService()
     }
 
     private fun startTimerService(stateJson: String) {
@@ -48,14 +66,18 @@ class MainActivity: FlutterActivity() {
 
     private fun closeTimerServiceIfPresent() : Boolean {
         val hadService = connection.timerService != null
+        unbindService()
         val service = Intent(this, TimerService::class.java)
+        Log.i(TAG, "Stopping service")
+        stopService(service)
+        return hadService
+    }
+
+    private fun unbindService() {
         if (connection.timerService != null) {
             Log.i(TAG, "Unbinding service as was not null")
             connection.unbindService(this)
         }
-        Log.i(TAG, "Stopping service")
-        stopService(service)
-        return hadService
     }
 
     private val connection = object : ServiceConnection {
