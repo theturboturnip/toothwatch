@@ -5,7 +5,6 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:optional/optional.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toothwatch/toothwatch/models/stopwatch_persistent_state.dart';
 import 'package:toothwatch/toothwatch/bloc/ticker.dart';
@@ -49,17 +48,27 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
 
   Future<StopwatchState> loadNewStateFromSurroundings() async {
     final loadedPersistentData = await loadPersistentData();
-    _closeServiceIfPresent();
+    final hadService = await _closeServiceIfPresent();
 
     if (loadedPersistentData.timerStartEpochMs != null) {
-      // NOTE - returning a new state with the correct suspend value is correct.
-      //  returning StopwatchIdle and enqueueing a StopwatchStart would *not* be.
-      //  this is because we don't know what's queued after us - if we unsuspend and have a suspend directly afterwards, we'd suspend incorrect state.
-      _startTicker();
-      final newState = StopwatchTicking.fromPersistent(loadedPersistentData,
-          secondsElapsed: secondsSince(loadedPersistentData.timerStartEpochMs));
-      _startService(newState);
-      return newState;
+      final MAX_SECONDS_WITHOUT_SERVICE = 15.0 * 60.0;
+      // If we don't have a service, we assume that something weird has happened - the phone may have died, or the user may have force quit the app. In that case, the user may have put their teeth back in if it took a long time, so give them the benefit of the doubt.
+      if (!hadService && secondsSince(loadedPersistentData.timerStartEpochMs) > MAX_SECONDS_WITHOUT_SERVICE) {
+        print("No service found, and the time we would add exceeds the maximum. Only adding the maximum.");
+        return StopwatchIdle(
+            loadedPersistentData.timingData.withNewTime(MAX_SECONDS_WITHOUT_SERVICE));
+      } else {
+        // If there was a timer started within 10 minutes of start, continue it.
+
+        // NOTE - returning a new state with the correct suspend value is correct.
+        //  returning StopwatchIdle and enqueueing a StopwatchStart would *not* be.
+        //  this is because we don't know what's queued after us - if we unsuspend and have a suspend directly afterwards, we'd suspend incorrect state.
+        _startTicker();
+        final newState = StopwatchTicking.fromPersistent(loadedPersistentData,
+            secondsElapsed: secondsSince(loadedPersistentData.timerStartEpochMs));
+        _startService(newState);
+        return newState;
+      }
     }
     return StopwatchIdle(loadedPersistentData.timingData);
   }
@@ -134,7 +143,7 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         initialState: PersistentNotificationState.fromStopwatchState(state.getPersistentData())
     );
   }
-  void _closeServiceIfPresent() async => await _javaTimerControl.closeTimerServiceIfPresent();
+  Future<bool> _closeServiceIfPresent() async => _javaTimerControl.closeTimerServiceIfPresent();
 
   int _getMillisecondsSinceEpoch() => DateTime.now().millisecondsSinceEpoch;
 

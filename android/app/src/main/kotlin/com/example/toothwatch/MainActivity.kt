@@ -24,12 +24,18 @@ class MainActivity: FlutterActivity() {
                     startTimerService(call.argument<String>("stateJson") ?: "");
                     result.success(null);
                 } else if (call.method == "closeTimerServiceIfPresent") {
-                    closeTimerServiceIfPresent()
-                    result.success(null)
+                    val hadService = closeTimerServiceIfPresent()
+                    result.success(hadService)
                 } else {
                     result.notImplemented()
                 }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        closeTimerServiceIfPresent()
+        // TODO - This should probably stop the timer - this used to be implicit(?) before, because state was tied to the notification. But now that it isn't, the app can """keep counting""" while the notification isn't up.
     }
 
     private fun startTimerService(stateJson: String) {
@@ -40,7 +46,8 @@ class MainActivity: FlutterActivity() {
         bindService(service, connection, 0)
     }
 
-    private fun closeTimerServiceIfPresent() {
+    private fun closeTimerServiceIfPresent() : Boolean {
+        val hadService = connection.timerService != null
         val service = Intent(this, TimerService::class.java)
         if (connection.timerService != null) {
             Log.i(TAG, "Unbinding service as was not null")
@@ -48,6 +55,7 @@ class MainActivity: FlutterActivity() {
         }
         Log.i(TAG, "Stopping service")
         stopService(service)
+        return hadService
     }
 
     private val connection = object : ServiceConnection {

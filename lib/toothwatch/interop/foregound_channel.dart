@@ -14,7 +14,7 @@ class ForegroundChannel {
     });
   }
 
-  Future<void> closeTimerServiceIfPresent() async {
-    await platform.invokeMethod<String>('closeTimerServiceIfPresent');
+  Future<bool> closeTimerServiceIfPresent() async {
+    return await platform.invokeMethod<bool>('closeTimerServiceIfPresent');
   }
 }
