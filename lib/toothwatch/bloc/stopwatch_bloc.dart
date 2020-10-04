@@ -132,7 +132,7 @@ class StopwatchBloc extends Bloc<StopwatchEvent, StopwatchState> {
         if (state is StopwatchTicking)
           return StopwatchTicking.fromPersistent(
               state.getPersistentData(),
-              secondsElapsed: (state as StopwatchTicking).secondsElapsed + 0.1);
+              secondsElapsed: secondsSince((state as StopwatchTicking).timerStartEpochMs));
       } else if (event is StopwatchCleared) {
         return StopwatchIdle(TimingData.empty());
       }
